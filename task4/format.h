@@ -17,10 +17,7 @@ struct format_s
             is_negative = false,
             is_space = false,
             is_sharp = false,
-            is_zero = false,
-            is_upcase = false,
-            is_hex = false,
-            is_oct = false;
+            is_zero = false;
     int width = 0, precision = -1;
     char len = ' ';
     char spec;
@@ -33,9 +30,9 @@ template<typename... Args>
 string format(const string &fmt, const Args &... args);
 
 template<typename In, typename... Out>
-string implementation(const string &fmt, unsigned pos, const In &force, const Out &... args);
+string substitute(const string &fmt, unsigned pos, const In &force, const Out &... args);
 
-string implementation(const string &fmt, unsigned pos);
+string substitute(const string &fmt, unsigned pos);
 
 template<typename In, typename Out>
 typename enable_if<is_convertible<Out, In>::value, In>::type parsing(Out force)

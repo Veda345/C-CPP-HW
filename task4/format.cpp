@@ -3,14 +3,14 @@
 
 using namespace std;
 
-string implementation(const string &fmt, unsigned pos)
+string substitute(const string &fmt, unsigned pos)
 {
     return get_inter_sym(fmt, pos, false);
 }
 
 
 template<typename In, typename... Out>
-string implementation(const string &fmt, unsigned pos, const In &force, const Out &... args)
+string substitute(const string &fmt, unsigned pos, const In &force, const Out &... args)
 {
     string begin = "";
     int p = pos;
@@ -23,7 +23,7 @@ string implementation(const string &fmt, unsigned pos, const In &force, const Ou
     {
         string replace = fmt.substr(p, pos - p);
         replace += to_string(parsing<int>(force));
-        return implementation(replace + fmt.substr(pos + 1), p, args...);
+        return substitute(replace + fmt.substr(pos + 1), p, args...);
     }
 
     string cur = "";
@@ -40,7 +40,7 @@ string implementation(const string &fmt, unsigned pos, const In &force, const Ou
         {
             string replace = fmt.substr(p, pos - p);
             replace += to_string(parsing<int>(force));
-            return implementation(replace + fmt.substr(pos + 1), p, args...);
+            return substitute(replace + fmt.substr(pos + 1), p, args...);
         } else
         {
             if (fmt[pos] == '-')
@@ -81,12 +81,12 @@ string implementation(const string &fmt, unsigned pos, const In &force, const Ou
         output << showbase << showpoint;
 
     string res = get_substitute(fmt, pos, _fmt, force, output);
-    string next = implementation(fmt, pos, args...);
+    string next = substitute(fmt, pos, args...);
     return begin + res + next;
 }
 
 template<typename... Args>
 string format(const string &fmt, const Args &... args)
 {
-    return implementation(fmt, 0, args...);
+    return substitute(fmt, 0, args...);
 }
