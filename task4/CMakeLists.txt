@@ -3,12 +3,9 @@ project(task4)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES format.cpp)
+add_library(format STATIC format.cpp)
+target_compile_features(format PRIVATE cxx_variadic_templates)
+install (TARGETS format DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+install (FILES format.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
-add_library(format ${SOURCE_FILES})
-add_executable(task4 ${SOURCE_FILES})
-target_link_libraries(task4 format)
-
-set(SOURCES format.cpp)
-install (TARGETS format DESTINATION lib)
-install(FILES format.h DESTINATION include)
+add_definitions(-DRELEASE)
