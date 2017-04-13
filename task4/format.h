@@ -155,45 +155,14 @@ void parse_int(struct format_s &_fmt, Out arg, stringstream &output)
     if (_fmt.width > 0 && _fmt.precision > 0)
     {
         output << setw(_fmt.width - _fmt.precision) << setfill(' ') << "";
-        output << setw(_fmt.precision) << setfill('0');
+        if (_fmt.is_positive)
+        {
+            char ch = _fmt.is_zero ? '0' : ' ';
+            output << setw(_fmt.precision) << setfill(ch);
+        } else
+            output << setw(_fmt.precision) << setfill('0');
     }
-    uintmax_t u;
-    switch (_fmt.len)
-    {
-        case 'H':
-            u = parsing<unsigned char>(arg);
-            break;
-        case 'h':
-            u = parsing<unsigned short int>(arg);
-            break;
-        case 'l':
-            u = parsing<unsigned long int>(arg);
-            break;
-        case 'U':
-            u = parsing<unsigned long long int>(arg);
-            break;
-        case 'j':
-            u = parsing<uintmax_t>(arg);
-            break;
-        case 'z':
-            u = parsing<size_t>(arg);
-            break;
-        case 't':
-            u = parsing<ptrdiff_t>(arg);
-            break;
-        case ' ':
-            u = parsing<unsigned int>(arg);
-            break;
-        default:
-            throw invalid_argument("Invalid len param for integer specifier");
-    }
-    output << u;
-}
-
-template<typename Out>
-void parse_hex_int(struct format_s &_fmt, Out arg, stringstream &output)
-{
-    uintmax_t u;
+    int64_t u;
     switch (_fmt.len)
     {
         case 'H':
@@ -255,15 +224,16 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
             output << hex << showpoint << showbase;
             parse_int(_fmt, arg, output);
             break;
+        case 'G':
+            output << std::uppercase;
+        case 'g':
+            parse_int(_fmt, arg, output);
+            break;
         case 'E':
             output << std::uppercase;
         case 'e':
             //todo
             parse_int(_fmt, arg, output);
-        case 'G':
-            output << std::uppercase;
-        case 'g':
-            //todo
         case 'F':
             output << std::uppercase;
         case 'f':
@@ -431,7 +401,6 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
     if (_fmt.is_sharp)
         output << showbase;
     output << showpoint;
-
     string res = get_substitute(fmt, pos, _fmt, force, output);
     string next = substitute(fmt, pos, args...);
     return begin + res + next;
