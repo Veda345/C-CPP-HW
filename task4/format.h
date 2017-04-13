@@ -52,7 +52,7 @@ string get_inter_sym(const string &fmt, unsigned &pos, bool hasArg)
     {
         while (pos < fmt.length() && fmt[pos] != '%')
             pos++;
-        sym += fmt.substr(p, pos - p);
+        sym = fmt.substr(p, pos - p);
 
         if (pos == fmt.length() - 1)
             throw invalid_argument("Invalid format");
@@ -66,9 +66,12 @@ string get_inter_sym(const string &fmt, unsigned &pos, bool hasArg)
             continue;
         } else
         {
-            if (!hasArg)
+            if (!hasArg) {
                 throw invalid_argument("Not enough args");
-            return sym;
+            } else {
+                return sym;
+            }
+//
         }
     }
     return sym;
@@ -337,6 +340,9 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
     cur = "";
     if (pos < fmt.length() - 1 && fmt[pos] == '.')
     {
+        if(!_fmt.is_zero && !_fmt.is_space) {
+            _fmt.is_zero = true;
+        }
         pos++;
         if (fmt[pos] == '*')
         {
@@ -351,7 +357,11 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
             while (pos < fmt.length() && isdigit(fmt[pos]))
                 cur += fmt[pos++];
             if (!cur.empty())
+            {
                 _fmt.precision = stoi(cur);
+                if(_fmt.width <= 0)
+                    _fmt.width = _fmt.precision;
+            }
         }
     }
 
@@ -367,17 +377,21 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
         throw invalid_argument("Specifier missed!");
 
     stringstream output;
-    if (_fmt.is_positive) output << showpos;
+    if (_fmt.is_positive)
+        output << showpos;
     if (_fmt.is_zero)
         output << setfill('0');
     if (_fmt.is_space)
         output << setfill(' ');
     if (_fmt.width > 0)
         output << setw(_fmt.width);
+    if(_fmt.is_negative)  {
+        output << left;
+    }
     if (_fmt.precision >= 0)
     {
         output << fixed;
-        output.precision(_fmt.precision);
+        output << setprecision(_fmt.precision);
     }
     if (_fmt.is_sharp)
         output << showbase << showpoint;
