@@ -18,7 +18,7 @@ struct format_s
             is_space = false,
             is_sharp = false,
             is_zero = false;
-    int width = 0, precision = -1;
+    int width = -1, precision = -1;
     char len = ' ';
     char spec;
     string specifiers = "diuoxXfFeEgGaAcspn";
@@ -389,15 +389,16 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
     }
     if (_fmt.precision > 0)
     {
+        output << fixed;
         if (_fmt.width > 0) {
             output << setw(_fmt.width - _fmt.precision) << setfill(' ') << "";
             output << setw(_fmt.precision) << setfill('0');
-        } else {
-            output << fixed;
         }
         output << setprecision(_fmt.precision);
-    } else {
-        output << fixed;
+    } else  {
+        if (_fmt.width <= 0) {
+            output << fixed;
+        }
         output << setprecision(6);
     }
     if (_fmt.is_sharp)
