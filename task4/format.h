@@ -387,13 +387,18 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
     if(_fmt.is_negative)  {
         output << left;
     }
-    if (_fmt.precision >= 0)
+    if (_fmt.precision > 0)
     {
         if (_fmt.width > 0) {
             output << setw(_fmt.width - _fmt.precision) << setfill(' ') << "";
             output << setw(_fmt.precision) << setfill('0');
+        } else {
+            output << fixed;
         }
         output << setprecision(_fmt.precision);
+    } else {
+        output << fixed;
+        output << setprecision(6);
     }
     if (_fmt.is_sharp)
         output << showbase;
