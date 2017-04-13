@@ -150,6 +150,13 @@ void get_len_type(const string &fmt, uint &pos, struct format_s &_fmt)
 template<typename Out>
 void parse_int(struct format_s &_fmt, Out arg, stringstream &output)
 {
+    if (_fmt.width <= 0)
+        _fmt.width = _fmt.precision;
+    if (_fmt.width > 0 && _fmt.precision > 0)
+    {
+        output << setw(_fmt.width - _fmt.precision) << setfill(' ') << "";
+        output << setw(_fmt.precision) << setfill('0');
+    }
     uintmax_t u;
     switch (_fmt.len)
     {
@@ -227,44 +234,7 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
     {
         case 'i':
         case 'd':
-            intmax_t res;
-            if (_fmt.width <= 0)
-                _fmt.width = _fmt.precision;
-            if (_fmt.width > 0 && _fmt.precision > 0)
-            {
-                output << setw(_fmt.width - _fmt.precision) << setfill(' ') << "";
-                output << setw(_fmt.precision) << setfill('0');
-            }
-            switch (_fmt.len)
-            {
-                case 'H':
-                    res = parsing<signed char>(arg);
-                    break;
-                case 'h':
-                    res = parsing<short int>(arg);
-                    break;
-                case 'U':
-                    res = parsing<long long int>(arg);
-                    break;
-                case 'l':
-                    res = parsing<long int>(arg);
-                    break;
-                case 'j':
-                    res = parsing<intmax_t>(arg);
-                    break;
-                case 'z':
-                    res = parsing<size_t>(arg);
-                    break;
-                case 't':
-                    res = parsing<ptrdiff_t>(arg);
-                    break;
-                case ' ':
-                    res = parsing<int>(arg);
-                    break;
-                default:
-                    throw invalid_argument("Invalid len param for integer specifier");
-            }
-            output << res;
+            parse_int(_fmt, arg, output);
             break;
         case 'X':
             output << std::uppercase;
@@ -290,12 +260,10 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
         case 'e':
             //todo
             parse_int(_fmt, arg, output);
-            break;
         case 'G':
             output << std::uppercase;
         case 'g':
             //todo
-            break;
         case 'F':
             output << std::uppercase;
         case 'f':
