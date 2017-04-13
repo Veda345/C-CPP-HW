@@ -216,6 +216,7 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
             parse_int(_fmt, arg, output);
             break;
         case 'u':
+            output << noshowpos;
             parse_int(_fmt, arg, output);
             break;
         case 'A':
