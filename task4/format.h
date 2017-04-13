@@ -47,12 +47,12 @@ typename enable_if<!is_convertible<Out, In>::value, In>::type parsing(Out force)
 string get_inter_sym(const string &fmt, unsigned &pos, bool hasArg)
 {
     string sym = "";
-    int p = pos;
     while (pos < fmt.length())
     {
+        int p = pos;
         while (pos < fmt.length() && fmt[pos] != '%')
             pos++;
-        sym = fmt.substr(p, pos - p);
+        sym += fmt.substr(p, pos - p);
 
         if (pos == fmt.length() - 1)
             throw invalid_argument("Invalid format");
@@ -71,7 +71,6 @@ string get_inter_sym(const string &fmt, unsigned &pos, bool hasArg)
             } else {
                 return sym;
             }
-//
         }
     }
     return sym;
@@ -390,11 +389,15 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
     }
     if (_fmt.precision >= 0)
     {
-        output << fixed;
+        if (_fmt.width > 0) {
+            output << setw(_fmt.width - _fmt.precision) << setfill(' ') << "";
+            output << setw(_fmt.precision) << setfill('0');
+        }
         output << setprecision(_fmt.precision);
     }
     if (_fmt.is_sharp)
-        output << showbase << showpoint;
+        output << showbase;
+    output << showpoint;
 
     string res = get_substitute(fmt, pos, _fmt, force, output);
     string next = substitute(fmt, pos, args...);
