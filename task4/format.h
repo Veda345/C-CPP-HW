@@ -66,9 +66,11 @@ string get_inter_sym(const string &fmt, unsigned &pos, bool hasArg)
             continue;
         } else
         {
-            if (!hasArg) {
-                throw invalid_argument("Not enough args");
-            } else {
+            if (!hasArg)
+            {
+                throw out_of_range("Not enough args");
+            } else
+            {
                 return sym;
             }
         }
@@ -146,7 +148,44 @@ void get_len_type(const string &fmt, uint &pos, struct format_s &_fmt)
 }
 
 template<typename Out>
-void parse_int(struct format_s &_fmt, Out arg, stringstream &output) {
+void parse_int(struct format_s &_fmt, Out arg, stringstream &output)
+{
+    uintmax_t u;
+    switch (_fmt.len)
+    {
+        case 'H':
+            u = parsing<unsigned char>(arg);
+            break;
+        case 'h':
+            u = parsing<unsigned short int>(arg);
+            break;
+        case 'l':
+            u = parsing<unsigned long int>(arg);
+            break;
+        case 'U':
+            u = parsing<unsigned long long int>(arg);
+            break;
+        case 'j':
+            u = parsing<uintmax_t>(arg);
+            break;
+        case 'z':
+            u = parsing<size_t>(arg);
+            break;
+        case 't':
+            u = parsing<ptrdiff_t>(arg);
+            break;
+        case ' ':
+            u = parsing<unsigned int>(arg);
+            break;
+        default:
+            throw invalid_argument("Invalid len param for integer specifier");
+    }
+    output << u;
+}
+
+template<typename Out>
+void parse_hex_int(struct format_s &_fmt, Out arg, stringstream &output)
+{
     uintmax_t u;
     switch (_fmt.len)
     {
@@ -189,6 +228,13 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
         case 'i':
         case 'd':
             intmax_t res;
+            if (_fmt.width <= 0)
+                _fmt.width = _fmt.precision;
+            if (_fmt.width > 0 && _fmt.precision > 0)
+            {
+                output << setw(_fmt.width - _fmt.precision) << setfill(' ') << "";
+                output << setw(_fmt.precision) << setfill('0');
+            }
             switch (_fmt.len)
             {
                 case 'H':
@@ -233,15 +279,40 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
         case 'u':
             parse_int(_fmt, arg, output);
             break;
-        case 'E':
-        case 'G':
         case 'A':
             output << std::uppercase;
-        case 'e':
-        case 'g':
         case 'a':
+            output << hex << showpoint << showbase;
+            parse_int(_fmt, arg, output);
+            break;
+        case 'E':
+            output << std::uppercase;
+        case 'e':
+            //todo
+            parse_int(_fmt, arg, output);
+            break;
+        case 'G':
+            output << std::uppercase;
+        case 'g':
+            //todo
+            break;
         case 'F':
+            output << std::uppercase;
         case 'f':
+            if (_fmt.width <= 0)
+                _fmt.width = _fmt.precision;
+            if (_fmt.precision > 0)
+            {
+                output << fixed;
+                output << setprecision(_fmt.precision);
+            } else
+            {
+                if (_fmt.width <= 0)
+                {
+                    output << fixed;
+                }
+                output << setprecision(6);
+            }
             double f;
             switch (_fmt.len)
             {
@@ -258,6 +329,8 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
             output << f;
             break;
         case 'c':
+            _fmt.is_zero = false;
+            output << setfill(' ');
             switch (_fmt.len)
             {
                 case 'l':
@@ -274,6 +347,8 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
         {
             string str;
             wstring wstr;
+            _fmt.is_zero = false;
+            output << setfill(' ');
             switch (_fmt.len)
             {
                 case 'l':
@@ -339,7 +414,8 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
     cur = "";
     if (pos < fmt.length() - 1 && fmt[pos] == '.')
     {
-        if(!_fmt.is_zero && !_fmt.is_space) {
+        if (!_fmt.is_zero && !_fmt.is_space)
+        {
             _fmt.is_zero = true;
         }
         pos++;
@@ -358,8 +434,6 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
             if (!cur.empty())
             {
                 _fmt.precision = stoi(cur);
-                if(_fmt.width <= 0)
-                    _fmt.width = _fmt.precision;
             }
         }
     }
@@ -384,23 +458,8 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
         output << setfill(' ');
     if (_fmt.width > 0)
         output << setw(_fmt.width);
-    if(_fmt.is_negative)  {
+    if (_fmt.is_negative)
         output << left;
-    }
-    if (_fmt.precision > 0)
-    {
-        output << fixed;
-        if (_fmt.width > 0) {
-            output << setw(_fmt.width - _fmt.precision) << setfill(' ') << "";
-            output << setw(_fmt.precision) << setfill('0');
-        }
-        output << setprecision(_fmt.precision);
-    } else  {
-        if (_fmt.width <= 0) {
-            output << fixed;
-        }
-        output << setprecision(6);
-    }
     if (_fmt.is_sharp)
         output << showbase;
     output << showpoint;
