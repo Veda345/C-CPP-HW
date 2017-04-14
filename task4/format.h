@@ -29,17 +29,17 @@ struct format_s
 template<typename... Args>
 string format(const string &fmt, const Args &... args);
 
-template<typename In, typename... Out>
-string substitute(const string &fmt, unsigned pos, const In &force, const Out &... args);
+template<typename T, typename... S>
+string substitute(const string &fmt, unsigned pos, const T &force, const S &... args);
 
-template<typename In, typename Out>
-typename enable_if<is_convertible<Out, In>::value, In>::type parsing(Out force)
+template<typename T, typename S>
+typename enable_if<is_convertible<S, T>::value, T>::type parsing(S force)
 {
-    return (In) force;
+    return (T) force;
 }
 
-template<typename In, typename Out>
-typename enable_if<!is_convertible<Out, In>::value, In>::type parsing(Out force)
+template<typename T, typename S>
+typename enable_if<!is_convertible<S, T>::value, T>::type parsing(S force)
 {
     throw invalid_argument("Invalid argument type.");
 }
@@ -147,8 +147,8 @@ void get_len_type(const string &fmt, uint &pos, struct format_s &_fmt)
     }
 }
 
-template<typename Out>
-void parse_int(struct format_s &_fmt, Out arg, stringstream &output)
+template<typename S>
+void parse_int(struct format_s &_fmt, S arg, stringstream &output)
 {
     if (!_fmt.is_zero && !_fmt.is_space)
         _fmt.is_zero = true;
@@ -197,8 +197,8 @@ void parse_int(struct format_s &_fmt, Out arg, stringstream &output)
     output << u;
 }
 
-template<typename Out>
-void parse_double(struct format_s &_fmt, Out arg, stringstream &output)
+template<typename S>
+void parse_double(struct format_s &_fmt, S arg, stringstream &output)
 {
     if (!_fmt.is_zero && !_fmt.is_space)
         _fmt.is_zero = true;
@@ -218,8 +218,39 @@ void parse_double(struct format_s &_fmt, Out arg, stringstream &output)
     output << f;
 }
 
-template<typename Out>
-void parse_g(struct format_s &_fmt, Out arg, stringstream &output)
+template<typename S>
+void parse_a(struct format_s &_fmt, S arg, stringstream &output)
+{
+    double f;
+    switch (_fmt.len)
+    {
+        case 'l':
+        case ' ':
+            f = parsing<double>(arg);
+            break;
+        case 'L':
+            f = parsing<long double>(arg);
+            break;
+        default:
+            throw invalid_argument("Invalid len param for given specifier");
+    }
+    if (_fmt.width <= 0 && _fmt.precision <= 0) _fmt.precision = 6;
+    if (_fmt.width <= 0) _fmt.width = 6;
+    char *buf = new char[1024];
+    string s = "%";
+    if (_fmt.is_zero) s += '0';
+    if (_fmt.is_positive) s += '+';
+    if (_fmt.is_negative) s += '-';
+    if (_fmt.is_space) s += ' ';
+    if (_fmt.width > 0) s += to_string(_fmt.width);
+    if (_fmt.precision > 0) s += '.', s += to_string(_fmt.precision);
+    s += _fmt.spec;
+    snprintf(buf, 1024, s.c_str(), f);
+    output << buf;
+}
+
+template<typename S>
+void parse_g(struct format_s &_fmt, S arg, stringstream &output)
 {
     int32_t f;
     output << setfill(_fmt.is_zero ? '0' : ' ');
@@ -238,8 +269,8 @@ void parse_g(struct format_s &_fmt, Out arg, stringstream &output)
     output << f;
 }
 
-template<typename Out>
-string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out arg, stringstream &output)
+template<typename S>
+string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, S arg, stringstream &output)
 {
     _fmt.spec = fmt[pos++];
     switch (_fmt.spec)
@@ -263,10 +294,8 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
             parse_int(_fmt, arg, output);
             break;
         case 'A':
-            output << std::uppercase;
         case 'a':
-            output << hex << showpoint << showbase << scientific;
-            parse_double(_fmt, arg, output);
+            parse_a(_fmt, arg, output);
             break;
         case 'G':
             output << std::uppercase;
@@ -313,7 +342,6 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
             switch (_fmt.len)
             {
                 case 'l':
-                    //
                     break;
                 case ' ':
                     output << parsing<unsigned char>(arg);
@@ -331,8 +359,6 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
             switch (_fmt.len)
             {
                 case 'l':
-//                    wstr = parsing<wstring>(arg);
-//                    output << wstr;
                     break;
                 case ' ':
                     str = parsing<string>(arg);
@@ -367,8 +393,8 @@ string substitute(const string &fmt, unsigned pos)
 }
 
 
-template<typename In, typename... Out>
-string substitute(const string &fmt, unsigned pos, const In &force, const Out &... args)
+template<typename T, typename... S>
+string substitute(const string &fmt, unsigned pos, const T &force, const S &... args)
 {
     string begin = "";
     int p = pos;
