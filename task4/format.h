@@ -218,7 +218,7 @@ template<typename Out>
 void parse_g(struct format_s &_fmt, Out arg, stringstream &output)
 {
     int32_t f;
-    output << setfill(' ');
+    output << setfill(_fmt.is_zero ? '0' : ' ');
     switch (_fmt.len)
     {
         case 'l':
@@ -261,7 +261,7 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
         case 'A':
             output << std::uppercase;
         case 'a':
-            output << hex << showpoint << showbase;
+            output << hex << showpoint << showbase << scientific;
             parse_double(_fmt, arg, output);
             break;
         case 'G':
@@ -273,7 +273,13 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
         case 'E':
             output << std::uppercase;
         case 'e':
-            output << fixed << std::scientific;
+            if (_fmt.is_space)
+            {
+                output << setw(1);
+                output << " ";
+                output << setw(_fmt.width);
+            }
+            output << fixed << std::scientific << setprecision(_fmt.precision);
             parse_double(_fmt, arg, output);
             break;
         case 'F':
