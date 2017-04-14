@@ -234,8 +234,7 @@ void parse_a(struct format_s &_fmt, S arg, stringstream &output)
         default:
             throw invalid_argument("Invalid len param for given specifier");
     }
-    if (_fmt.width <= 0 && _fmt.precision <= 0) _fmt.precision = 6;
-    if (_fmt.width <= 0) _fmt.width = 6;
+//    if (_fmt.width <= 0 && _fmt.precision <= 0) _fmt.precision = 6;
     char *buf = new char[1024];
     string s = "%";
     if (_fmt.is_zero) s += '0';
