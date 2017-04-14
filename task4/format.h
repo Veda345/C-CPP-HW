@@ -27,10 +27,10 @@ struct format_s
 };
 
 template<typename... Args>
-string format(const string &fmt, const Args &... args);
+string format(const string &cur_str, const Args &... args);
 
 template<typename T, typename... S>
-string substitute(const string &fmt, unsigned pos, const T &force, const S &... args);
+string substitute(const string &cur_str, unsigned pos, const T &force, const S &... args);
 
 template<typename T, typename S>
 typename enable_if<is_convertible<S, T>::value, T>::type parsing(S force)
@@ -44,22 +44,22 @@ typename enable_if<!is_convertible<S, T>::value, T>::type parsing(S force)
     throw invalid_argument("Invalid argument type.");
 }
 
-string get_inter_sym(const string &fmt, unsigned &pos, bool hasArg)
+string get_inter_sym(const string &cur_str, unsigned &pos, bool hasArg)
 {
     string sym = "";
-    while (pos < fmt.length())
+    while (pos < cur_str.length())
     {
         int p = pos;
-        while (pos < fmt.length() && fmt[pos] != '%')
+        while (pos < cur_str.length() && cur_str[pos] != '%')
             pos++;
-        sym += fmt.substr(p, pos - p);
+        sym += cur_str.substr(p, pos - p);
 
-        if (pos == fmt.length() - 1)
+        if (pos == cur_str.length() - 1)
             throw invalid_argument("Invalid format");
-        if (pos == fmt.length())
+        if (pos == cur_str.length())
             return sym;
 
-        if (fmt[++pos] == '%')
+        if (cur_str[++pos] == '%')
         {
             pos++;
             sym += '%';
@@ -78,68 +78,68 @@ string get_inter_sym(const string &fmt, unsigned &pos, bool hasArg)
     return sym;
 }
 
-void get_flags(const string &fmt, uint &pos, struct format_s &_fmt)
+void get_flags(const string &cur_str, uint &pos, struct format_s &cur_format)
 {
-    while (pos < fmt.length() && _fmt.flags.find(fmt[pos]) != string::npos)
-        switch (fmt[pos++])
+    while (pos < cur_str.length() && cur_format.flags.find(cur_str[pos]) != string::npos)
+        switch (cur_str[pos++])
         {
             case '-':
-                _fmt.is_negative = true;
+                cur_format.is_negative = true;
                 break;
             case '+':
-                _fmt.is_positive = true;
+                cur_format.is_positive = true;
                 break;
             case ' ':
-                _fmt.is_space = true;
+                cur_format.is_space = true;
                 break;
             case '#':
-                _fmt.is_sharp = true;
+                cur_format.is_sharp = true;
                 break;
             case '0':
-                _fmt.is_zero = true;
+                cur_format.is_zero = true;
                 break;
             default:
                 throw invalid_argument("Invalid flag");
         }
 }
 
-void get_len_type(const string &fmt, uint &pos, struct format_s &_fmt)
+void get_len_type(const string &cur_str, uint &pos, struct format_s &cur_format)
 {
-    if (_fmt.len_types.find(fmt[pos]) != string::npos)
+    if (cur_format.len_types.find(cur_str[pos]) != string::npos)
     {
-        switch (fmt[pos])
+        switch (cur_str[pos])
         {
             case 'h':
-                if (pos + 1 < fmt.length() && fmt[pos + 1] == 'h')
+                if (pos + 1 < cur_str.length() && cur_str[pos + 1] == 'h')
                 {
-                    _fmt.len = 'H';
+                    cur_format.len = 'H';
                     pos++;
                 } else
                 {
-                    _fmt.len = 'h';
+                    cur_format.len = 'h';
                 }
                 break;
             case 'l':
-                if (pos + 1 < fmt.length() && fmt[pos + 1] == 'l')
+                if (pos + 1 < cur_str.length() && cur_str[pos + 1] == 'l')
                 {
-                    _fmt.len = 'U';
+                    cur_format.len = 'U';
                     pos++;
                 } else
                 {
-                    _fmt.len = 'l';
+                    cur_format.len = 'l';
                 }
                 break;
             case 'j':
-                _fmt.len = 'j';
+                cur_format.len = 'j';
                 break;
             case 'z':
-                _fmt.len = 'z';
+                cur_format.len = 'z';
                 break;
             case 't':
-                _fmt.len = 't';
+                cur_format.len = 't';
                 break;
             case 'L':
-                _fmt.len = 'L';
+                cur_format.len = 'L';
                 break;
             default:
                 throw invalid_argument("Invalid length param");
@@ -148,24 +148,24 @@ void get_len_type(const string &fmt, uint &pos, struct format_s &_fmt)
 }
 
 template<typename S>
-void parse_int(struct format_s &_fmt, S arg, stringstream &output)
+void parse_int(struct format_s &cur_format, S arg, stringstream &output)
 {
-    if (!_fmt.is_zero && !_fmt.is_space)
-        _fmt.is_zero = true;
-    if (_fmt.width <= 0)
-        _fmt.width = _fmt.precision;
-    if (_fmt.width > 0 && _fmt.precision > 0)
+    if (!cur_format.is_zero && !cur_format.is_space)
+        cur_format.is_zero = true;
+    if (cur_format.width <= 0)
+        cur_format.width = cur_format.precision;
+    if (cur_format.width > 0 && cur_format.precision > 0)
     {
-        output << setw(_fmt.width - _fmt.precision) << setfill(' ') << "";
-        if (_fmt.is_positive)
+        output << setw(cur_format.width - cur_format.precision) << setfill(' ') << "";
+        if (cur_format.is_positive)
         {
-            char ch = _fmt.is_zero ? '0' : ' ';
-            output << setw(_fmt.precision) << setfill(ch);
+            char ch = cur_format.is_zero ? '0' : ' ';
+            output << setw(cur_format.precision) << setfill(ch);
         } else
-            output << setw(_fmt.precision) << setfill('0');
+            output << setw(cur_format.precision) << setfill('0');
     }
     int64_t u;
-    switch (_fmt.len)
+    switch (cur_format.len)
     {
         case 'H':
             u = parsing<unsigned char>(arg);
@@ -198,12 +198,12 @@ void parse_int(struct format_s &_fmt, S arg, stringstream &output)
 }
 
 template<typename S>
-void parse_double(struct format_s &_fmt, S arg, stringstream &output)
+void parse_double(struct format_s &cur_format, S arg, stringstream &output)
 {
-    if (!_fmt.is_zero && !_fmt.is_space)
-        _fmt.is_zero = true;
+    if (!cur_format.is_zero && !cur_format.is_space)
+        cur_format.is_zero = true;
     double f;
-    switch (_fmt.len)
+    switch (cur_format.len)
     {
         case 'l':
         case ' ':
@@ -219,10 +219,10 @@ void parse_double(struct format_s &_fmt, S arg, stringstream &output)
 }
 
 template<typename S>
-void parse_a(struct format_s &_fmt, S arg, stringstream &output)
+void parse_a(struct format_s &cur_format, S arg, stringstream &output)
 {
     double f;
-    switch (_fmt.len)
+    switch (cur_format.len)
     {
         case 'l':
         case ' ':
@@ -234,26 +234,25 @@ void parse_a(struct format_s &_fmt, S arg, stringstream &output)
         default:
             throw invalid_argument("Invalid len param for given specifier");
     }
-//    if (_fmt.width <= 0 && _fmt.precision <= 0) _fmt.precision = 6;
     char *buf = new char[1024];
     string s = "%";
-    if (_fmt.is_zero) s += '0';
-    if (_fmt.is_positive) s += '+';
-    if (_fmt.is_negative) s += '-';
-    if (_fmt.is_space) s += ' ';
-    if (_fmt.width > 0) s += to_string(_fmt.width);
-    if (_fmt.precision > 0) s += '.', s += to_string(_fmt.precision);
-    s += _fmt.spec;
+    if (cur_format.is_zero) s += '0';
+    if (cur_format.is_positive) s += '+';
+    if (cur_format.is_negative) s += '-';
+    if (cur_format.is_space) s += ' ';
+    if (cur_format.width > 0) s += to_string(cur_format.width);
+    if (cur_format.precision > 0) s += '.', s += to_string(cur_format.precision);
+    s += cur_format.spec;
     snprintf(buf, 1024, s.c_str(), f);
     output << buf;
 }
 
 template<typename S>
-void parse_g(struct format_s &_fmt, S arg, stringstream &output)
+void parse_g(struct format_s &cur_format, S arg, stringstream &output)
 {
     int32_t f;
-    output << setfill(_fmt.is_zero ? '0' : ' ');
-    switch (_fmt.len)
+    output << setfill(cur_format.is_zero ? '0' : ' ');
+    switch (cur_format.len)
     {
         case 'l':
         case ' ':
@@ -269,76 +268,76 @@ void parse_g(struct format_s &_fmt, S arg, stringstream &output)
 }
 
 template<typename S>
-string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, S arg, stringstream &output)
+string get_substitute(const string &cur_str, uint &pos, struct format_s &cur_format, S arg, stringstream &output)
 {
-    _fmt.spec = fmt[pos++];
-    switch (_fmt.spec)
+    cur_format.spec = cur_str[pos++];
+    switch (cur_format.spec)
     {
         case 'i':
         case 'd':
-            parse_int(_fmt, arg, output);
+            parse_int(cur_format, arg, output);
             break;
         case 'X':
             output << std::uppercase;
         case 'x':
             output << std::hex;
-            parse_int(_fmt, arg, output);
+            parse_int(cur_format, arg, output);
             break;
         case 'o':
             output << std::oct;
-            parse_int(_fmt, arg, output);
+            parse_int(cur_format, arg, output);
             break;
         case 'u':
             output << noshowpos;
-            parse_int(_fmt, arg, output);
+            parse_int(cur_format, arg, output);
             break;
         case 'A':
         case 'a':
-            parse_a(_fmt, arg, output);
+            parse_a(cur_format, arg, output);
             break;
         case 'G':
             output << std::uppercase;
         case 'g':
             output << std::setprecision(0);
-            parse_g(_fmt, arg, output);
+            parse_g(cur_format, arg, output);
             break;
         case 'E':
             output << std::uppercase;
         case 'e':
-            if (_fmt.is_space)
+            if (cur_format.is_space)
             {
                 output << setw(1);
                 output << " ";
-                output << setw(_fmt.width);
+                output << setw(cur_format.width);
             }
-            output << fixed << std::scientific << setprecision(_fmt.precision);
-            parse_double(_fmt, arg, output);
+            output << fixed << std::scientific << setprecision(cur_format.precision);
+            parse_double(cur_format, arg, output);
             break;
         case 'F':
             output << std::uppercase;
         case 'f':
-            if (_fmt.is_space)
+            if (cur_format.is_space)
             {
                 output << setw(1);
                 output << " ";
-                output << setw(_fmt.width);
+                output << setw(cur_format.width);
             }
-            if (_fmt.precision > 0 && _fmt.width > 0)
+            if (cur_format.precision > 0 && cur_format.width > 0)
             {
                 output << fixed;
-                output << setprecision(_fmt.precision);
-            } else if (_fmt.precision <= 0)
+                output << setprecision(cur_format.precision);
+            } else if (cur_format.precision <= 0)
             {
                 output << fixed;
                 output << setprecision(6);
             }
-            parse_double(_fmt, arg, output);
+            parse_double(cur_format, arg, output);
             break;
 
         case 'c':
-            _fmt.is_zero = false;
+            cur_format.is_zero = false;
             output << setfill(' ');
-            switch (_fmt.len)
+            switch (cur_format.len)
             {
                 case 'l':
                     break;
@@ -353,16 +352,16 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, S arg
         {
             string str;
             wstring wstr;
-            _fmt.is_zero = false;
+            cur_format.is_zero = false;
             output << setfill(' ');
-            switch (_fmt.len)
+            switch (cur_format.len)
             {
                 case 'l':
                     break;
                 case ' ':
                     str = parsing<string>(arg);
-                    if (str.length() > (unsigned) _fmt.precision && _fmt.precision >= 0)
-                        str = str.substr(0, _fmt.precision);
+                    if (str.length() > (unsigned) cur_format.precision && cur_format.precision >= 0)
+                        str = str.substr(0, cur_format.precision);
                     output << str;
                     break;
                 default:
@@ -372,7 +371,7 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, S arg
             break;
         case 'p':
             char null_p[8];
-            if (_fmt.len != ' ')
+            if (cur_format.len != ' ')
                 throw invalid_argument("Invalid len param for given specifier");
             snprintf(null_p, 2, "%p", parsing<void *>(arg));
             if (null_p[0] != '(' && parsing<void *>(arg) != NULL && parsing<void *>(arg) != nullptr)
@@ -386,92 +385,92 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, S arg
     return output.str();
 }
 
-string substitute(const string &fmt, unsigned pos)
+string substitute(const string &cur_str, unsigned pos)
 {
-    return get_inter_sym(fmt, pos, false);
+    return get_inter_sym(cur_str, pos, false);
 }
 
 
 template<typename T, typename... S>
-string substitute(const string &fmt, unsigned pos, const T &force, const S &... args)
+string substitute(const string &cur_str, unsigned pos, const T &force, const S &... args)
 {
     string begin = "";
     int p = pos;
-    begin = get_inter_sym(fmt, pos, true);
-    struct format_s _fmt;
+    begin = get_inter_sym(cur_str, pos, true);
+    struct format_s cur_format;
 
-    get_flags(fmt, pos, _fmt);
+    get_flags(cur_str, pos, cur_format);
 
-    if (pos < fmt.length() && fmt[pos] == '*')
+    if (pos < cur_str.length() && cur_str[pos] == '*')
     {
-        string replace = fmt.substr(p, pos - p);
+        string replace = cur_str.substr(p, pos - p);
         replace += to_string(parsing<int>(force));
-        return substitute(replace + fmt.substr(pos + 1), p, args...);
+        return substitute(replace + cur_str.substr(pos + 1), p, args...);
     }
 
     string cur = "";
-    while (pos < fmt.length() && isdigit(fmt[pos]))
-        cur += fmt[pos++];
+    while (pos < cur_str.length() && isdigit(cur_str[pos]))
+        cur += cur_str[pos++];
     if (!cur.empty())
-        _fmt.width = stoi(cur);
+        cur_format.width = stoi(cur);
 
     cur = "";
-    if (pos < fmt.length() - 1 && fmt[pos] == '.')
+    if (pos < cur_str.length() - 1 && cur_str[pos] == '.')
     {
         pos++;
-        if (fmt[pos] == '*')
+        if (cur_str[pos] == '*')
         {
-            string replace = fmt.substr(p, pos - p);
+            string replace = cur_str.substr(p, pos - p);
             replace += to_string(parsing<int>(force));
-            return substitute(replace + fmt.substr(pos + 1), p, args...);
+            return substitute(replace + cur_str.substr(pos + 1), p, args...);
         } else
         {
-            if (fmt[pos] == '-')
+            if (cur_str[pos] == '-')
                 throw invalid_argument("Invalid precision");
-            _fmt.precision = 0;
-            while (pos < fmt.length() && isdigit(fmt[pos]))
-                cur += fmt[pos++];
+            cur_format.precision = 0;
+            while (pos < cur_str.length() && isdigit(cur_str[pos]))
+                cur += cur_str[pos++];
             if (!cur.empty())
             {
-                _fmt.precision = stoi(cur);
+                cur_format.precision = stoi(cur);
             }
         }
     }
 
-    get_len_type(fmt, pos, _fmt);
+    get_len_type(cur_str, pos, cur_format);
 
-    if (_fmt.len != ' ')
+    if (cur_format.len != ' ')
         pos++;
 
-    if (pos < fmt.length() && _fmt.len_types.find(fmt[pos]) != string::npos)
+    if (pos < cur_str.length() && cur_format.len_types.find(cur_str[pos]) != string::npos)
         throw invalid_argument("Invalid length param!");
 
-    if (pos == fmt.length())
+    if (pos == cur_str.length())
         throw invalid_argument("Specifier missed!");
 
     stringstream output;
-    if (_fmt.is_positive)
+    if (cur_format.is_positive)
         output << showpos;
-    if (_fmt.is_zero)
+    if (cur_format.is_zero)
         output << setfill('0');
-    if (_fmt.is_space)
+    if (cur_format.is_space)
         output << setfill(' ');
-    if (_fmt.width > 0)
-        output << setw(_fmt.width);
-    if (_fmt.is_negative)
+    if (cur_format.width > 0)
+        output << setw(cur_format.width);
+    if (cur_format.is_negative)
         output << left;
-    if (_fmt.is_sharp)
+    if (cur_format.is_sharp)
         output << showbase;
     output << showpoint;
-    string res = get_substitute(fmt, pos, _fmt, force, output);
-    string next = substitute(fmt, pos, args...);
+    string res = get_substitute(cur_str, pos, cur_format, force, output);
+    string next = substitute(cur_str, pos, args...);
     return begin + res + next;
 }
 
 template<typename... Args>
-string format(const string &fmt, const Args &... args)
+string format(const string &cur_str, const Args &... args)
 {
-    return substitute(fmt, 0, args...);
+    return substitute(cur_str, 0, args...);
 }
 
 #endif //TASK4_FORMAT_H
