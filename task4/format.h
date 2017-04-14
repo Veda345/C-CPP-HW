@@ -196,6 +196,45 @@ void parse_int(struct format_s &_fmt, Out arg, stringstream &output)
 }
 
 template<typename Out>
+void parse_double(struct format_s &_fmt, Out arg, stringstream &output)
+{
+    double f;
+    switch (_fmt.len)
+    {
+        case 'l':
+        case ' ':
+            f = parsing<double>(arg);
+            break;
+        case 'L':
+            f = parsing<long double>(arg);
+            break;
+        default:
+            throw invalid_argument("Invalid len param for given specifier");
+    }
+    output << f;
+}
+
+template<typename Out>
+void parse_g(struct format_s &_fmt, Out arg, stringstream &output)
+{
+    int32_t f;
+    output << setfill(' ');
+    switch (_fmt.len)
+    {
+        case 'l':
+        case ' ':
+            f = parsing<int>(arg);
+            break;
+        case 'L':
+            f = parsing<long int>(arg);
+            break;
+        default:
+            throw invalid_argument("Invalid len param for given specifier");
+    }
+    output << f;
+}
+
+template<typename Out>
 string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out arg, stringstream &output)
 {
     _fmt.spec = fmt[pos++];
@@ -223,17 +262,19 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
             output << std::uppercase;
         case 'a':
             output << hex << showpoint << showbase;
-            parse_int(_fmt, arg, output);
+            parse_double(_fmt, arg, output);
             break;
         case 'G':
             output << std::uppercase;
         case 'g':
-            parse_int(_fmt, arg, output);
+            output << std::setprecision(0);
+            parse_g(_fmt, arg, output);
             break;
         case 'E':
             output << std::uppercase;
         case 'e':
-            parse_int(_fmt, arg, output);
+            output << fixed << std::scientific;
+            parse_double(_fmt, arg, output);
             break;
         case 'F':
             output << std::uppercase;
@@ -248,26 +289,14 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
             {
                 output << fixed;
                 output << setprecision(_fmt.precision);
-            } else
+            } else if (_fmt.precision <= 0)
             {
                 output << fixed;
                 output << setprecision(6);
             }
-            double f;
-            switch (_fmt.len)
-            {
-                case 'l':
-                case ' ':
-                    f = parsing<double>(arg);
-                    break;
-                case 'L':
-                    f = parsing<long double>(arg);
-                    break;
-                default:
-                    throw invalid_argument("Invalid len param for given specifier");
-            }
-            output << f;
+            parse_double(_fmt, arg, output);
             break;
+
         case 'c':
             _fmt.is_zero = false;
             output << setfill(' ');
