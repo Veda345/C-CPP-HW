@@ -150,6 +150,8 @@ void get_len_type(const string &fmt, uint &pos, struct format_s &_fmt)
 template<typename Out>
 void parse_int(struct format_s &_fmt, Out arg, stringstream &output)
 {
+    if (!_fmt.is_zero && !_fmt.is_space)
+        _fmt.is_zero = true;
     if (_fmt.width <= 0)
         _fmt.width = _fmt.precision;
     if (_fmt.width > 0 && _fmt.precision > 0)
@@ -198,6 +200,8 @@ void parse_int(struct format_s &_fmt, Out arg, stringstream &output)
 template<typename Out>
 void parse_double(struct format_s &_fmt, Out arg, stringstream &output)
 {
+    if (!_fmt.is_zero && !_fmt.is_space)
+        _fmt.is_zero = true;
     double f;
     switch (_fmt.len)
     {
@@ -389,10 +393,6 @@ string substitute(const string &fmt, unsigned pos, const In &force, const Out &.
     cur = "";
     if (pos < fmt.length() - 1 && fmt[pos] == '.')
     {
-        if (!_fmt.is_zero && !_fmt.is_space)
-        {
-            _fmt.is_zero = true;
-        }
         pos++;
         if (fmt[pos] == '*')
         {
