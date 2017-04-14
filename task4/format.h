@@ -233,23 +233,24 @@ string get_substitute(const string &fmt, uint &pos, struct format_s &_fmt, Out a
         case 'E':
             output << std::uppercase;
         case 'e':
-            //todo
             parse_int(_fmt, arg, output);
+            break;
         case 'F':
             output << std::uppercase;
         case 'f':
-            if (_fmt.width <= 0)
-                _fmt.width = _fmt.precision;
-            if (_fmt.precision > 0)
+            if (_fmt.is_space)
+            {
+                output << setw(1);
+                output << " ";
+                output << setw(_fmt.width);
+            }
+            if (_fmt.precision > 0 && _fmt.width > 0)
             {
                 output << fixed;
                 output << setprecision(_fmt.precision);
             } else
             {
-                if (_fmt.width <= 0)
-                {
-                    output << fixed;
-                }
+                output << fixed;
                 output << setprecision(6);
             }
             double f;
