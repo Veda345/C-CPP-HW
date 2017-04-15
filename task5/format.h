@@ -26,6 +26,8 @@ struct format_s
     string flags = "-+ #0";
 };
 
+string parse_at_symbol(nullptr_t force);
+
 template<typename... Args>
 string format(const string &cur_str, const Args &... args);
 
@@ -267,8 +269,6 @@ void parse_g(struct format_s &cur_format, S arg, stringstream &output)
     output << f;
 }
 
-string parse_at_symbol(nullptr_t force);
-
 template<typename T>
 typename enable_if<!is_integral<T>::value && !is_convertible<T, string>::value &&
                    !is_pointer<T>::value, string>::type parse_at_symbol(const T &force)
@@ -300,7 +300,7 @@ typename enable_if<is_convertible<T, string>::value, string>::type parse_at_symb
 
 template<typename T>
 typename enable_if<!is_array<T>::value && !is_convertible<T, string>::value &&
-        is_pointer<T>::value, string>::type parse_at_symbol(T &force)
+                   is_pointer<T>::value, string>::type parse_at_symbol(T &force)
 {
     string outcome = "";
     if (!force)
