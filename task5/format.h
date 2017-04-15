@@ -267,61 +267,47 @@ void parse_g(struct format_s &cur_format, S arg, stringstream &output)
     output << f;
 }
 
-string parseAtSymbol(nullptr_t variable);
+string parse_at_symbol(nullptr_t force);
 
 template<typename T>
-typename std::enable_if<!std::is_integral<T>::value && !std::is_convertible<T, std::string>::value &&
-                        !std::is_pointer<T>::value, std::string>::type
-parseAtSymbol(const T &variable)
+typename enable_if<!is_integral<T>::value && !is_convertible<T, string>::value &&
+                   !is_pointer<T>::value, string>::type parse_at_symbol(const T &force)
 {
-    throw std::invalid_argument("Invalid argument type.");
+    throw invalid_argument("Invalid argument");
 }
 
 template<typename T>
-typename std::enable_if<std::is_integral<T>::value, std::string>::type
-parseAtSymbol(T variable)
+typename enable_if<is_integral<T>::value, string>::type parse_at_symbol(T force)
 {
-    return std::to_string(variable);
+    return to_string(force);
 }
 
-template<typename T, int num>
-typename std::enable_if<std::is_array<T>::value, std::string>::type
-parseAtSymbol(const T (&a)[num])
+template<typename T, int pos>
+typename enable_if<!is_convertible<T *, string>::value, string>::type parse_at_symbol(const T (&arg)[pos])
 {
-    std::string r = "[";
-    for (int i = 0; i < num - 1; i++)
-    {
-        r.append(std::to_string(a[i]) + ",");
-    }
-    r.append(std::to_string(a[num - 1]) + ']');
-    return r;
+    string outcome = "[";
+    for (int i = 0; i < pos - 1; i++)
+        outcome += to_string(arg[i]) + ", ";
+    outcome += to_string(arg[pos - 1]) + ']';
+    return outcome;
 }
 
 template<typename T>
-typename std::enable_if<std::is_convertible<T, std::string>::value, std::string>::type
-parseAtSymbol(const T &variable)
+typename enable_if<is_convertible<T, string>::value, string>::type parse_at_symbol(const T &force)
 {
-    return variable;
+    return force;
 }
 
 template<typename T>
-typename std::enable_if<!std::is_array<T>::value && !std::is_convertible<T, std::string>::value
-                        && std::is_pointer<T>::value, std::string>::type
-parseAtSymbol(T &variable)
+typename enable_if<!is_array<T>::value && !is_convertible<T, string>::value &&
+        is_pointer<T>::value, string>::type parse_at_symbol(T &force)
 {
-    stringstream r;
-    std::string type = typeid(*variable).name();
-    if (type == "i")
-        type = "int";
-    else if (type.find("basic_string") != string::npos || type == "Ss")
-        type = "std::string";
-    if (variable == 0)
-        r << "nullptr<" << type << ">";
-    else if (type == "std::string")
-        r << "ptr<" << type << ">(" << (*variable) << ")";
+    string outcome = "";
+    if (!force)
+        outcome += "nullptr<" + (string) typeid(*force).name() + ">";
     else
-        r << "ptr<" << type << ">(" << to_string(*variable) << ")";
-    return r.str();
+        outcome += "ptr<" + (string) typeid(*force).name() + ">(" + format("%@", *force) + ")";
+    return outcome;
 }
 
 template<typename S>
@@ -437,7 +423,7 @@ string get_substitute(const string &cur_str, uint &pos, struct format_s &cur_for
                 output << "(nil)";
             break;
         case '@':
-            output << parseAtSymbol(arg);
+            output << parse_at_symbol(arg);
             break;
     }
 
