@@ -26,24 +26,67 @@ struct format_s
     string flags = "-+ #0";
 };
 
-string parse_at_symbol(nullptr_t force);
+string parse_at_symbol(nullptr_t arg);
 
 template<typename... Args>
 string format(const string &cur_str, const Args &... args);
 
 template<typename T, typename... S>
-string substitute(const string &cur_str, unsigned pos, const T &force, const S &... args);
+string substitute(const string &cur_str, unsigned pos, const T &arg, const S &... args);
+
+template<typename T>
+typename enable_if<!is_integral<T>::value && !is_convertible<T, string>::value &&
+                   !is_pointer<T>::value, string>::type parse_at_symbol(const T &arg)
+{
+    throw invalid_argument("Invalid argument");
+}
+
+template<typename T>
+typename enable_if<is_integral<T>::value, string>::type parse_at_symbol(T arg)
+{
+    return to_string(arg);
+}
+
+template<typename T, int pos>
+typename enable_if<!is_convertible<T *, string>::value, string>::type parse_at_symbol(const T (&arg)[pos])
+{
+    string outcome = "[";
+    for (int i = 0; i < pos - 1; i++)
+        outcome += to_string(arg[i]) + ", ";
+    outcome += to_string(arg[pos - 1]) + ']';
+    return outcome;
+}
+
+template<typename T>
+typename enable_if<is_convertible<T, string>::value, string>::type parse_at_symbol(const T &arg)
+{
+    return arg;
+}
+
+template<typename T>
+typename enable_if<!is_array<T>::value && !is_convertible<T, string>::value &&
+                   is_pointer<T>::value, string>::type parse_at_symbol(T &arg)
+{
+    string outcome = "";
+    if (!arg)
+        outcome += "nullptr<" + (string) typeid(*arg).name() + ">";
+    else
+        outcome += "ptr<" + (string) typeid(*arg).name() + ">(" + format("%@", *arg) + ")";
+    return outcome;
+}
+
+
 
 template<typename T, typename S>
-typename enable_if<is_convertible<S, T>::value, T>::type parsing(S force)
+typename enable_if<is_convertible<S, T>::value, T>::type parsing(S arg)
 {
-    return (T) force;
+    return (T) arg;
 }
 
 template<typename T, typename S>
-typename enable_if<!is_convertible<S, T>::value, T>::type parsing(S force)
+typename enable_if<!is_convertible<S, T>::value, T>::type parsing(S arg)
 {
-    throw invalid_argument("Invalid argument type.");
+    throw invalid_argument("Invalid argument");
 }
 
 string get_inter_sym(const string &cur_str, unsigned &pos, bool hasArg)
@@ -269,47 +312,6 @@ void parse_g(struct format_s &cur_format, S arg, stringstream &output)
     output << f;
 }
 
-template<typename T>
-typename enable_if<!is_integral<T>::value && !is_convertible<T, string>::value &&
-                   !is_pointer<T>::value, string>::type parse_at_symbol(const T &force)
-{
-    throw invalid_argument("Invalid argument");
-}
-
-template<typename T>
-typename enable_if<is_integral<T>::value, string>::type parse_at_symbol(T force)
-{
-    return to_string(force);
-}
-
-template<typename T, int pos>
-typename enable_if<!is_convertible<T *, string>::value, string>::type parse_at_symbol(const T (&arg)[pos])
-{
-    string outcome = "[";
-    for (int i = 0; i < pos - 1; i++)
-        outcome += to_string(arg[i]) + ", ";
-    outcome += to_string(arg[pos - 1]) + ']';
-    return outcome;
-}
-
-template<typename T>
-typename enable_if<is_convertible<T, string>::value, string>::type parse_at_symbol(const T &force)
-{
-    return force;
-}
-
-template<typename T>
-typename enable_if<!is_array<T>::value && !is_convertible<T, string>::value &&
-                   is_pointer<T>::value, string>::type parse_at_symbol(T &force)
-{
-    string outcome = "";
-    if (!force)
-        outcome += "nullptr<" + (string) typeid(*force).name() + ">";
-    else
-        outcome += "ptr<" + (string) typeid(*force).name() + ">(" + format("%@", *force) + ")";
-    return outcome;
-}
-
 template<typename S>
 string get_substitute(const string &cur_str, uint &pos, struct format_s &cur_format, S arg, stringstream &output)
 {
@@ -437,7 +439,7 @@ string substitute(const string &cur_str, unsigned pos)
 
 
 template<typename T, typename... S>
-string substitute(const string &cur_str, unsigned pos, const T &force, const S &... args)
+string substitute(const string &cur_str, unsigned pos, const T &arg, const S &... args)
 {
     string begin = "";
     int p = pos;
@@ -449,7 +451,7 @@ string substitute(const string &cur_str, unsigned pos, const T &force, const S &
     if (pos < cur_str.length() && cur_str[pos] == '*')
     {
         string replace = cur_str.substr(p, pos - p);
-        replace += to_string(parsing<int>(force));
+        replace += to_string(parsing<int>(arg));
         return substitute(replace + cur_str.substr(pos + 1), p, args...);
     }
 
@@ -466,7 +468,7 @@ string substitute(const string &cur_str, unsigned pos, const T &force, const S &
         if (cur_str[pos] == '*')
         {
             string replace = cur_str.substr(p, pos - p);
-            replace += to_string(parsing<int>(force));
+            replace += to_string(parsing<int>(arg));
             return substitute(replace + cur_str.substr(pos + 1), p, args...);
         } else
         {
@@ -507,7 +509,7 @@ string substitute(const string &cur_str, unsigned pos, const T &force, const S &
     if (cur_format.is_sharp)
         output << showbase;
     output << showpoint;
-    string res = get_substitute(cur_str, pos, cur_format, force, output);
+    string res = get_substitute(cur_str, pos, cur_format, arg, output);
     string next = substitute(cur_str, pos, args...);
     return begin + res + next;
 }
