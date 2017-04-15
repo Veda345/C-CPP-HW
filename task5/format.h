@@ -36,51 +36,48 @@ string substitute(const string &cur_str, unsigned pos, const T &arg, const S &..
 
 
 
-template<class T>
-typename std::enable_if<!std::is_integral<T>::value && !std::is_convertible<T, std::string>::value && !std::is_pointer<T>::value, std::string>::type
-parse_at_symbol(T const&)
+template<typename T>
+typename enable_if<!is_integral<T>::value && !is_convertible<T, string>::value &&
+                   !is_pointer<T>::value, string>::type parse_at_symbol(const T &arg)
 {
-    throw std::invalid_argument("Invalid argument type");
+    throw invalid_argument("Invalid argument");
 }
 
-template<class T>
-typename std::enable_if<std::is_integral<T>::value, std::string>::type
-parse_at_symbol(T value)
+template<typename T>
+typename enable_if<is_integral<T>::value, string>::type parse_at_symbol(T arg)
 {
-    return to_string(value);
+    return to_string(arg);
 }
 
-template<class T, size_t size>
-typename std::enable_if<!std::is_convertible<T*, std::string>::value, std::string>::type
-parse_at_symbol(T const (&a)[size])
+template<class T, size_t pos>
+string parse_at_symbol(T (&arg)[pos])
 {
-    std::string ret = "[";
-    for (size_t i = 0; i != size; ++i)
-    {
-        if (i)
-            ret += ",";
-        ret += to_string(a[i]);
-    }
-    ret += ']';
-    return ret;
+    string res = "[";
+    for (int i = 0; i < pos - 1; i++)
+        res += to_string(arg[i]) + ", ";
+    res += to_string(arg[pos - 1]) + ']';
+    return res;
 }
 
-template<class T>
-typename std::enable_if<std::is_convertible<T, std::string>::value, std::string>::type
-parse_at_symbol(T const &value)
+string parse_at_symbol(const string &arg)
 {
-    return value;
+    return arg;
 }
 
-template<class T>
-typename std::enable_if<!std::is_array<T>::value && !std::is_convertible<T, std::string>::value && std::is_pointer<T>::value, std::string>::type
-parse_at_symbol(T& value)
+template<typename T>
+typename enable_if<!is_array<T>::value && !is_convertible<T, string>::value &&
+                   is_pointer<T>::value, string>::type parse_at_symbol(T &arg)
 {
-    std::string name(typeid(*value).name());
-    name = name == "Ss" ? "std::string" : "int";
-    return value == 0 ? "nullptr<" + name + ">" : "ptr<" + name + ">(" + format("%@", *value) + ")";
+    string res = "";
+    string type = typeid(*arg).name();
+    if (type == "i") type = "int";
+    if (type == "Ss") type = "std::string";
+    if (!arg)
+        res += "nullptr<" + type + ">";
+    else
+        res += "ptr<" + type + ">(" + format("%@", *arg) + ")";
+    return res;
 }
-
 
 
 template<typename T, typename S>
@@ -319,7 +316,7 @@ void parse_g(struct format_s &cur_format, S arg, stringstream &output)
 }
 
 template<typename S>
-string get_substitute(const string &cur_str, uint &pos, struct format_s &cur_format, S arg, stringstream &output)
+string get_substitute(const string &cur_str, uint &pos, struct format_s &cur_format, const S &arg, stringstream &output)
 {
     cur_format.spec = cur_str[pos++];
     switch (cur_format.spec)
