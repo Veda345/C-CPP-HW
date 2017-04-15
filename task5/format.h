@@ -49,8 +49,8 @@ typename enable_if<is_integral<T>::value, string>::type parse_at_symbol(T arg)
     return to_string(arg);
 }
 
-template<typename T, int pos>
-typename enable_if<!is_convertible<T *, string>::value, string>::type parse_at_symbol(const T (&arg)[pos])
+template<class T, size_t pos>
+typename std::enable_if<is_array<T>::value, std::string>::type parse_at_symbol(T const (&arg)[pos])
 {
     string res = "[";
     for (int i = 0; i < pos - 1; i++)
@@ -59,8 +59,7 @@ typename enable_if<!is_convertible<T *, string>::value, string>::type parse_at_s
     return res;
 }
 
-template<typename T>
-typename enable_if<is_convertible<T, string>::value, string>::type parse_at_symbol(const T &arg)
+string parse_at_symbol(const string &arg)
 {
     return arg;
 }
