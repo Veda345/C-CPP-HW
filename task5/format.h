@@ -26,58 +26,55 @@ struct format_s
     string flags = "-+ #0";
 };
 
+string parse_at_symbol(nullptr_t arg);
+
 template<typename... Args>
 string format(const string &cur_str, const Args &... args);
 
 template<typename T, typename... S>
 string substitute(const string &cur_str, unsigned pos, const T &arg, const S &... args);
 
-std::string parse_at_symbol(nullptr_t value);
-
-template<class T>
-typename std::enable_if<!std::is_integral<T>::value && !std::is_convertible<T, std::string>::value && !std::is_pointer<T>::value, std::string>::type
-parse_at_symbol(T const&)
+template<typename T>
+typename enable_if<!is_integral<T>::value && !is_convertible<T, string>::value &&
+                   !is_pointer<T>::value, string>::type parse_at_symbol(const T &arg)
 {
-    throw std::invalid_argument("Invalid argument type");
+    throw invalid_argument("Invalid argument");
 }
 
-template<class T>
-typename std::enable_if<std::is_integral<T>::value, std::string>::type
-parse_at_symbol(T value)
+template<typename T>
+typename enable_if<is_integral<T>::value, string>::type parse_at_symbol(T arg)
 {
-    return to_string(value);
+    return to_string(arg);
 }
 
-template<class T, size_t size>
-typename std::enable_if<!std::is_convertible<T*, std::string>::value, std::string>::type
-parse_at_symbol(T const (&a)[size])
+template<typename T, int pos>
+typename enable_if<!is_convertible<T *, string>::value, string>::type parse_at_symbol(const T (&arg)[pos])
 {
-    std::string ret = "[";
-    for (size_t i = 0; i != size; ++i)
-    {
-        if (i)
-            ret += ",";
-        ret += to_string(a[i]);
-    }
-    ret += ']';
-    return ret;
+    string outcome = "[";
+    for (int i = 0; i < pos - 1; i++)
+        outcome += to_string(arg[i]) + ", ";
+    outcome += to_string(arg[pos - 1]) + ']';
+    return outcome;
 }
 
-template<class T>
-typename std::enable_if<std::is_convertible<T, std::string>::value, std::string>::type
-parse_at_symbol(T const &value)
+template<typename T>
+typename enable_if<is_convertible<T, string>::value, string>::type parse_at_symbol(const T &arg)
 {
-    return value;
+    return arg;
 }
 
-template<class T>
-typename std::enable_if<!std::is_array<T>::value && !std::is_convertible<T, std::string>::value && std::is_pointer<T>::value, std::string>::type
-parse_at_symbol(T& value)
+template<typename T>
+typename enable_if<!is_array<T>::value && !is_convertible<T, string>::value &&
+                   is_pointer<T>::value, string>::type parse_at_symbol(T &arg)
 {
-    std::string name(typeid(*value).name());
-    name = name == "Ss" ? "std::string" : "int";
-    return value == 0 ? "nullptr<" + name + ">" : "ptr<" + name + ">(" + format("%@", *value) + ")";
+    string outcome = "";
+    if (!arg)
+        outcome += "nullptr<" + (string) typeid(*arg).name() + ">";
+    else
+        outcome += "ptr<" + (string) typeid(*arg).name() + ">(" + format("%@", *arg) + ")";
+    return outcome;
 }
+
 
 
 template<typename T, typename S>
