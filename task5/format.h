@@ -54,7 +54,7 @@ string parse_at_symbol(T (&arg)[pos])
 {
     string res = "[";
     for (int i = 0; i < pos - 1; i++)
-        res += to_string(arg[i]) + ", ";
+        res += to_string(arg[i]) + ",";
     res += to_string(arg[pos - 1]) + ']';
     return res;
 }
