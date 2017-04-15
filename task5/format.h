@@ -520,4 +520,9 @@ string format(const string &cur_str, const Args &... args)
     return substitute(cur_str, 0, args...);
 }
 
+std::string parse_at_symbol(nullptr_t)
+{
+    return "nullptr";
+}
+
 #endif //TASK4_FORMAT_H 
