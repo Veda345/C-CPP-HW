@@ -34,6 +34,8 @@ string format(const string &cur_str, const Args &... args);
 template<typename T, typename... S>
 string substitute(const string &cur_str, unsigned pos, const T &arg, const S &... args);
 
+
+
 template<typename T>
 typename enable_if<!is_integral<T>::value && !is_convertible<T, string>::value &&
                    !is_pointer<T>::value, string>::type parse_at_symbol(const T &arg)
@@ -50,11 +52,11 @@ typename enable_if<is_integral<T>::value, string>::type parse_at_symbol(T arg)
 template<typename T, int pos>
 typename enable_if<!is_convertible<T *, string>::value, string>::type parse_at_symbol(const T (&arg)[pos])
 {
-    string outcome = "[";
+    string res = "[";
     for (int i = 0; i < pos - 1; i++)
-        outcome += to_string(arg[i]) + ", ";
-    outcome += to_string(arg[pos - 1]) + ']';
-    return outcome;
+        res += to_string(arg[i]) + ", ";
+    res += to_string(arg[pos - 1]) + ']';
+    return res;
 }
 
 template<typename T>
@@ -67,12 +69,15 @@ template<typename T>
 typename enable_if<!is_array<T>::value && !is_convertible<T, string>::value &&
                    is_pointer<T>::value, string>::type parse_at_symbol(T &arg)
 {
-    string outcome = "";
+    string res = "";
+    string type = typeid(*arg).name();
+    if (type == "i") type = "int";
+    if (type == "Ss") type = "std::string";
     if (!arg)
-        outcome += "nullptr<" + (string) typeid(*arg).name() + ">";
+        res += "nullptr<" + type + ">";
     else
-        outcome += "ptr<" + (string) typeid(*arg).name() + ">(" + format("%@", *arg) + ")";
-    return outcome;
+        res += "ptr<" + type + ">(" + format("%@", *arg) + ")";
+    return res;
 }
 
 
